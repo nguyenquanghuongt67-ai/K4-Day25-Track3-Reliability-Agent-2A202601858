@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Reliability Gateway — Interactive Visual Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-group">
+                <div class="logo-icon">⚡</div>
+                <div>
+                    <h1>LLM Reliability Gateway</h1>
+                    <p class="subtitle">Production Fault Tolerance, Circuit Breaker State Machine & Semantic Cache Simulator</p>
+                </div>
+            </div>
+            <div class="header-badges">
+                <span class="badge badge-primary">Day 25 Track 3</span>
+                <span class="badge badge-success">SLO Target: 99% SLA</span>
+            </div>
+        </header>
+
+        <!-- Main Dashboard Layout -->
+        <main class="dashboard-grid">
+
+            <!-- Control Panel (Left Column) -->
+            <section class="panel control-panel">
+                <h2><span class="icon">🎛️</span> Gateway Controls</h2>
+
+                <!-- Provider Health Controls -->
+                <div class="control-group">
+                    <label class="group-label">Primary Provider Status</label>
+                    <div class="button-trio">
+                        <button class="btn btn-sm btn-outline active" data-provider="primary" data-fail="0">🟢 Healthy (0%)</button>
+                        <button class="btn btn-sm btn-outline" data-provider="primary" data-fail="0.5">🟡 Flaky (50%)</button>
+                        <button class="btn btn-sm btn-outline" data-provider="primary" data-fail="1.0">🔴 Down (100%)</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="group-label">Backup Provider Status</label>
+                    <div class="button-trio">
+                        <button class="btn btn-sm btn-outline active" data-provider="backup" data-fail="0">🟢 Healthy (0%)</button>
+                        <button class="btn btn-sm btn-outline" data-provider="backup" data-fail="0.5">🟡 Flaky (50%)</button>
+                        <button class="btn btn-sm btn-outline" data-provider="backup" data-fail="1.0">🔴 Down (100%)</button>
+                    </div>
+                </div>
+
+                <!-- Circuit Breaker State Displays -->
+                <div class="breaker-status-grid">
+                    <div class="breaker-card" id="card-primary-cb">
+                        <div class="breaker-header">
+                            <span class="breaker-title">Primary Circuit</span>
+                            <span class="status-pill status-closed" id="state-primary">CLOSED</span>
+                        </div>
+                        <div class="breaker-metrics">
+                            <span>Failures: <b id="fail-count-primary">0/3</b></span>
+                            <span>Successes: <b id="succ-count-primary">0/1</b></span>
+                        </div>
+                    </div>
+
+                    <div class="breaker-card" id="card-backup-cb">
+                        <div class="breaker-header">
+                            <span class="breaker-title">Backup Circuit</span>
+                            <span class="status-pill status-closed" id="state-backup">CLOSED</span>
+                        </div>
+                        <div class="breaker-metrics">
+                            <span>Failures: <b id="fail-count-backup">0/3</b></span>
+                            <span>Successes: <b id="succ-count-backup">0/1</b></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cache Configuration -->
+                <div class="control-group">
+                    <label class="group-label">Cache Backend & Threshold</label>
+                    <div class="cache-setting-row">
+                        <select id="cache-backend-select" class="form-select">
+                            <option value="memory">In-Memory Cache</option>
+                            <option value="redis">Shared Redis Cache</option>
+                        </select>
+                        <div class="slider-wrapper">
+                            <span>Sim Threshold: <b id="threshold-val">0.85</b></span>
+                            <input type="range" id="similarity-range" min="0.5" max="0.99" step="0.01" value="0.85">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-row">
+                    <button class="btn btn-secondary" id="btn-reset-breakers">🔄 Reset Breakers</button>
+                    <button class="btn btn-secondary" id="btn-flush-cache">🧹 Flush Cache</button>
+                    <button class="btn btn-warning" id="btn-run-chaos">💥 Run Chaos Load Test</button>
+                </div>
+            </section>
+
+            <!-- Visual Workflow & Interactive Prompting (Right Column) -->
+            <section class="panel visual-panel">
+                <h2><span class="icon">🌐</span> Interactive Workflow Pipeline</h2>
+
+                <!-- Live Pipeline Visualization Nodes -->
+                <div class="pipeline-flow">
+                    <div class="flow-node node-client" id="node-client">
+                        <div class="node-icon">👤</div>
+                        <div class="node-label">User Request</div>
+                    </div>
+                    <div class="flow-arrow">➔</div>
+
+                    <div class="flow-node node-cache" id="node-cache">
+                        <div class="node-icon">⚡</div>
+                        <div class="node-label">Semantic Cache</div>
+                        <div class="node-sub" id="cache-status-sub">Checking...</div>
+                    </div>
+                    <div class="flow-arrow">➔</div>
+
+                    <div class="flow-node node-primary" id="node-primary">
+                        <div class="node-icon">🤖</div>
+                        <div class="node-label">Primary LLM</div>
+                        <div class="node-sub" id="primary-status-sub">CLOSED</div>
+                    </div>
+                    <div class="flow-arrow">➔</div>
+
+                    <div class="flow-node node-backup" id="node-backup">
+                        <div class="node-icon">🛡️</div>
+                        <div class="node-label">Backup LLM</div>
+                        <div class="node-sub" id="backup-status-sub">CLOSED</div>
+                    </div>
+                    <div class="flow-arrow">➔</div>
+
+                    <div class="flow-node node-fallback" id="node-fallback">
+                        <div class="node-icon">⚠️</div>
+                        <div class="node-label">Static Fallback</div>
+                        <div class="node-sub">Degraded</div>
+                    </div>
+                </div>
+
+                <!-- Prompt Input Bar -->
+                <div class="prompt-section">
+                    <label for="prompt-input">Test Prompt Query:</label>
+                    <div class="prompt-box">
+                        <input type="text" id="prompt-input" class="form-input" value="Summarize the refund policy for active accounts" placeholder="Type prompt or pick preset below...">
+                        <button class="btn btn-primary" id="btn-send-prompt">Execute Prompt 🚀</button>
+                    </div>
+
+                    <!-- Presets -->
+                    <div class="preset-pills">
+                        <span class="preset-label">Presets:</span>
+                        <button class="pill-btn" data-prompt="Summarize the refund policy for active accounts">Standard FAQ</button>
+                        <button class="pill-btn" data-prompt="Summarize refund policy for active users">Similar Query (Cache Hit?)</button>
+                        <button class="pill-btn" data-prompt="Show account balance for user 456">Privacy Query (Blocked)</button>
+                        <button class="pill-btn" data-prompt="Summarize refund policy for 2026 deadline">False-Hit Year Check (2026 vs 2024)</button>
+                    </div>
+                </div>
+
+                <!-- Execution Output Card -->
+                <div class="output-card" id="output-card">
+                    <div class="output-header">
+                        <span class="output-title">Gateway Response</span>
+                        <span class="route-badge" id="route-badge">Awaiting request...</span>
+                    </div>
+                    <div class="output-body" id="output-body">
+                        Select or enter a prompt and click "Execute Prompt" to see real-time routing through the gateway.
+                    </div>
+                    <div class="output-meta">
+                        <span>Latency: <b id="meta-latency">0 ms</b></span>
+                        <span>Cost: <b id="meta-cost">$0.00000</b></span>
+                        <span>Cache Score: <b id="meta-score">N/A</b></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Metrics & Analytics Summary (Full Row) -->
+            <section class="panel metrics-panel full-width">
+                <h2><span class="icon">📊</span> Live Reliability Analytics</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="metric-total">0</div>
+                        <div class="metric-label">Total Requests</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value text-success" id="metric-avail">100%</div>
+                        <div class="metric-label">Availability (SLO: >=99%)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value text-info" id="metric-hitrate">0.0%</div>
+                        <div class="metric-label">Cache Hit Rate</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value text-warning" id="metric-open-count">0</div>
+                        <div class="metric-label">Circuit Trips</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="metric-p95">0 ms</div>
+                        <div class="metric-label">P95 Latency</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value text-accent" id="metric-saved">$0.0000</div>
+                        <div class="metric-label">Cost Saved</div>
+                    </div>
+                </div>
+
+                <!-- Activity Log Terminal -->
+                <div class="terminal-container">
+                    <div class="terminal-header">
+                        <span>Gateway Log Stream & State Machine Transitions</span>
+                        <button class="btn btn-xs btn-outline" id="btn-clear-logs">Clear Logs</button>
+                    </div>
+                    <div class="terminal-body" id="log-terminal">
+                        <div class="log-line log-info">[System initialized] Gateway active and monitoring provider health.</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
